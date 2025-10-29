@@ -1,0 +1,6 @@
+gymnasium
+pygame
+stable-baselines3
+numpy
+loguru
+matplotlib
