@@ -7,7 +7,7 @@ def get_workspace(img:array):
     height, width = img.shape[:2]
 
     # Define the workspace as a rectangle in the center of the image
-    workspace = img[:-100,600:-500 ]
+    workspace = img[:,600:-400 ]
     # workspace =img[:,:] 
 
     return workspace

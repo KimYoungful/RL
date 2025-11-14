@@ -6,7 +6,7 @@ class EnvironmentRenderer:
         pygame.init()
         self.grid_size = grid_size
         self.cell_size = cell_size
-        self.window_size = window_size or (grid_size * cell_size * 2, grid_size * cell_size)
+        self.window_size = window_size or (grid_size * cell_size * 1.5, grid_size * cell_size)
         self.window = pygame.display.set_mode(self.window_size)
         self.canvas = pygame.Surface(self.window_size)
         self.canvas.fill((255, 255, 255))  # 白色背景

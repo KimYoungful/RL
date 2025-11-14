@@ -20,9 +20,9 @@ class URControl:
 
 
         # 计算速度（线性）
-        speed = 0.5
+        speed = 1.5
         # 可设置一个固定加速度（平滑）
-        acceleration =  0.3
+        acceleration =  1
         # print(f"Distance: {distance}, Speed: {speed}, Acceleration: {acceleration}")
         self.rtde_c.moveL(position, speed=speed, acceleration=acceleration,asynchronous=True)
 

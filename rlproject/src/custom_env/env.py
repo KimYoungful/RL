@@ -15,6 +15,10 @@ class CustomEnv(gym.Env):
     def __init__(self,render_mode=None):
         super().__init__()
         self.grid_size = 10
+
+        self.env_width = self.grid_size*1.5
+        self.env_height = self.grid_size
+
         self.pause = False
         self.domain_randomization = False
         self.render_mode = render_mode
@@ -43,9 +47,9 @@ class CustomEnv(gym.Env):
         # Action space (dx, dy)
         self.action_space = Box(low=-1, high=1, shape=(2,), dtype=np.float32)
         # Observation space (robot_x, robot_y, goal_x, goal_y)
-        self.observation_shape = 2+2+2+1+1+1+2+1+1 # Robot position, hand position, velocity_hand,radius_hand, and distance to hand
+        self.observation_shape = 2+2+2+1+1+1+2+1+1+2 # Robot position, hand position, velocity_hand,radius_hand, and distance to hand
 
-        self.observation_space = Box(low=0, high=np.array([self.grid_size*2,self.grid_size, self.grid_size*2, self.grid_size,1,1 , (2**0.5)*self.grid_size,0.5*self.grid_size,0.5*self.grid_size,2*self.grid_size,self.grid_size,self.stride_robot_random[1],self.stride_hand_random[1]]), 
+        self.observation_space = Box(low=0, high=np.array([self.env_width,self.env_height, self.env_width, self.env_height,1,1 , (2**0.5)*self.grid_size,0.5*self.grid_size,0.5*self.grid_size,2*self.grid_size,self.grid_size,self.stride_robot_random[1],self.stride_hand_random[1],self.env_width,self.env_height]), 
                                      shape=(self.observation_shape,), dtype=np.float32)
 
         self.random = True
@@ -88,14 +92,19 @@ class CustomEnv(gym.Env):
 
     def _get_obs(self):
         
-        return np.concatenate(([self.robot_position]+ [self.hand_position]+[self.last_action]+
+        return np.concatenate(([self.robot_position]+ 
+                               [self.hand_position]+
+                               [self.last_action]+
                                [np.array([self.current_distance])]+
                                [np.array([min(self.robot_position[0],
                                               self.robot_position[1],
-                                              self.grid_size-self.robot_position[0],
-                                              self.grid_size-self.robot_position[1]) ])]+
-                                              [np.array([self.dist_arm])]+
-                                               [self.fixed_point]+[np.array([self.stride_robot])]+[np.array([self.stride_hand])]))
+                                              self.env_width-self.robot_position[0],
+                                              self.env_height-self.robot_position[1])])]+
+                                [np.array([self.dist_arm])]+
+                                [self.fixed_point]+
+                                [np.array([self.stride_robot])]+
+                                [np.array([self.stride_hand])]+
+                                [np.array([self.env_width,self.env_height])]))
 
     def _get_info(self):
         return {
@@ -122,8 +131,8 @@ class CustomEnv(gym.Env):
         
         
         
-        self.robot_position = np.random.uniform(self.margin, [2*(self.grid_size-self.margin),self.grid_size-self.margin], size=2)
-        self.hand_position = np.random.uniform(self.margin, [2*(self.grid_size-self.margin),self.grid_size-self.margin], size=2)
+        self.robot_position = np.random.uniform(self.margin, [self.env_width-self.margin,self.env_height-self.margin])  # Randomize robot position
+        self.hand_position = np.random.uniform(self.margin, [self.env_width-self.margin,self.env_height-self.margin])  # Randomize hand position
         # self.hand_position = np.clip(self.hand_position, self.margin, self.grid_size-self.margin)  # Ensure hand stays within grid bounds
         
         # self.hand_move_mode = 'random' if np.random.rand() < 0.1 else 'towards_robot'  # Randomize hand movement mode
@@ -135,7 +144,7 @@ class CustomEnv(gym.Env):
         self.steps = 0
         self.trajectory_points = [self.robot_position.copy()] # New: Reset trajectory and add initial position
         
-        self.fixed_point = np.array([self.grid_size*random.uniform(0.2,1.8),self.grid_size])
+        self.fixed_point = np.array([self.grid_size*random.uniform(0.2,1.3),self.grid_size])
         return self._get_obs(), self._get_info()
 
     def _reward(self,action):
@@ -153,7 +162,7 @@ class CustomEnv(gym.Env):
             terminated = True  # Truncate if arm is too short
 
         # boundary penalty
-        if np.any(self.robot_position <= self.margin) or (self.grid_size-self.robot_position[1] <=self.margin) or (2*self.grid_size-self.robot_position[0] <=self.margin):
+        if np.any(self.robot_position <= self.margin) or (self.env_height-self.robot_position[1] <=self.margin) or self.env_width-self.robot_position[0] <=self.margin:
             reward += self.reward_bound
             terminated = True  # Truncate if robot goes out of bounds
             done_reason = "out of bounds"
@@ -215,7 +224,7 @@ class CustomEnv(gym.Env):
 
         move_hand = self._get_hand_movement()
         self.hand_position += move_hand  # Update hand position
-        self.hand_position = np.clip(self.hand_position, self.margin, [self.grid_size*2,self.grid_size-self.margin])  # Ensure hand stays within grid bounds
+        self.hand_position = np.clip(self.hand_position, self.margin, [self.env_width-self.margin,self.env_height-self.margin])  # Ensure hand stays within grid bounds
         # self.fixed_point+= np.array([np.,0])  # Randomize fixed point position
 
         self.robot_position += action * self.stride_robot  # Scale the action to control speed
